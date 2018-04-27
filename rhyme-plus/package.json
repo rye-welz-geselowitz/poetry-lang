@@ -1,0 +1,92 @@
+{
+  "_args": [
+    [
+      "rhyme-plus",
+      "/Users/Mac/RC/poetry_language"
+    ]
+  ],
+  "_from": "rhyme-plus@latest",
+  "_id": "rhyme-plus@0.0.7",
+  "_inCache": true,
+  "_installable": true,
+  "_location": "/rhyme-plus",
+  "_nodeVersion": "5.5.0",
+  "_npmUser": {
+    "email": "nick@mapmeld.com",
+    "name": "mapmeld"
+  },
+  "_npmVersion": "3.5.3",
+  "_phantomChildren": {},
+  "_requested": {
+    "name": "rhyme-plus",
+    "raw": "rhyme-plus",
+    "rawSpec": "",
+    "scope": null,
+    "spec": "latest",
+    "type": "tag"
+  },
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "https://registry.npmjs.org/rhyme-plus/-/rhyme-plus-0.0.7.tgz",
+  "_shasum": "a38926a572b09b45ce68675a4c7efe7b2fcfbc25",
+  "_shrinkwrap": null,
+  "_spec": "rhyme-plus",
+  "_where": "/Users/Mac/RC/poetry_language",
+  "author": {
+    "email": "mail@substack.net",
+    "name": "James Halliday",
+    "url": "http://substack.net"
+  },
+  "bugs": {
+    "url": "https://github.com/mapmeld/node-rhyme/issues"
+  },
+  "dependencies": {
+    "hashish": ">=0.0.2",
+    "lazy": ">=1.0.4"
+  },
+  "description": "A rhyming dictionary",
+  "devDependencies": {},
+  "directories": {},
+  "dist": {
+    "shasum": "a38926a572b09b45ce68675a4c7efe7b2fcfbc25",
+    "tarball": "https://registry.npmjs.org/rhyme-plus/-/rhyme-plus-0.0.7.tgz"
+  },
+  "engines": {
+    "node": ">=0.4.0"
+  },
+  "gitHead": "0e356392385217b7a4d48a1f96d711d84769ffe6",
+  "homepage": "https://github.com/mapmeld/node-rhyme#readme",
+  "keywords": [
+    "rhyme",
+    "meter",
+    "poem",
+    "poetry",
+    "song",
+    "phonemes",
+    "dictionary",
+    "syllables",
+    "pronounce",
+    "pronunciation",
+    "alliteration"
+  ],
+  "license": "MIT/X11",
+  "main": "./index.js",
+  "maintainers": [
+    {
+      "email": "nick@mapmeld.com",
+      "name": "mapmeld"
+    }
+  ],
+  "name": "rhyme-plus",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mapmeld/node-rhyme.git"
+  },
+  "scripts": {
+    "test": "expresso"
+  },
+  "version": "0.0.7"
+}

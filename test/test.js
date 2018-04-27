@@ -1,6 +1,6 @@
 const interpreter = require('../interpreter');
 const assert = require('assert');
-const rhyme = require('rhyme-plus');
+const rhyme = require('../rhyme-plus');
 
 //TODO: figure out why frog/hog/fog/dog rhymes arne't working
 
@@ -46,6 +46,15 @@ describe('Strings', () => {
           const text = `"fizz"`
           const actual = interpreter.interpret(text, r);
           assert.equal(actual, "fizz");
+          done();
+      })
+    });
+    it('Evaluates uppercase string',
+    (done) => {
+      rhyme((r)=>{
+          const text = `"FIZZ"`
+          const actual = interpreter.interpret(text, r);
+          assert.equal(actual, "FIZZ");
           done();
       })
     });
@@ -545,7 +554,7 @@ describe('Functions', () => {
           `
 
           const actual = interpreter.interpret(text, r);
-          const expected = `1. 2. crackle. 4. pop. crackle. 7. 8. crackle. pop. 11. crackle. 13. 14. cracklepop. 16. 17. crackle. 19. pop. crackle. 22. 23. crackle. pop. 26. crackle. 28. 29. cracklepop. 31. 32. crackle. 34. pop. crackle. 37. 38. crackle. pop. 41. crackle. 43. 44. cracklepop. 46. 47. crackle. 49. pop. crackle. 52. 53. crackle. pop. 56. crackle. 58. 59. cracklepop. 61. 62. crackle. 64. pop. crackle. 67. 68. crackle. pop. 71. crackle. 73. 74. cracklepop. 76. 77. crackle. 79. pop. crackle. 82. 83. crackle. pop. 86. crackle. 88. 89. cracklepop. 91. 92. crackle. 94. pop. crackle. 97. 98. crackle. pop.`
+          const expected = `1. 2. Crackle. 4. Pop. Crackle. 7. 8. Crackle. Pop. 11. Crackle. 13. 14. CracklePop. 16. 17. Crackle. 19. Pop. Crackle. 22. 23. Crackle. Pop. 26. Crackle. 28. 29. CracklePop. 31. 32. Crackle. 34. Pop. Crackle. 37. 38. Crackle. Pop. 41. Crackle. 43. 44. CracklePop. 46. 47. Crackle. 49. Pop. Crackle. 52. 53. Crackle. Pop. 56. Crackle. 58. 59. CracklePop. 61. 62. Crackle. 64. Pop. Crackle. 67. 68. Crackle. Pop. 71. Crackle. 73. 74. CracklePop. 76. 77. Crackle. 79. Pop. Crackle. 82. 83. Crackle. Pop. 86. Crackle. 88. 89. CracklePop. 91. 92. Crackle. 94. Pop. Crackle. 97. 98. Crackle. Pop.`
           assert.equal(actual.trim(), expected.trim());
           done();
       })

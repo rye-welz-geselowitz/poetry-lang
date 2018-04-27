@@ -1,0 +1,60 @@
+body{
+  background: black;
+  padding: 50px;
+}
+h1{
+  color: white;
+}
+#input{
+    width: 100%;
+    height: 400px;
+  resize: none;
+  background: black;
+  color: lightgray;
+  border: solid 1px gray;
+  margin-top: 20px;
+  padding: 10px;
+  font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+  font-size: 18px;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: 400;
+  line-height: 20px;
+}
+#input:focus{
+    outline: 0
+}
+#output{
+  margin-top: 20px;
+    width: 100%;
+    height: 100px;
+  resize: none;
+  background: black;
+  color: aqua;
+  border: 0px;
+  font-size: 24px;
+  padding: 10px;
+  font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+}
+#run-btn{
+    font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+  color: white;
+  background: black;
+  font-size: 30px;
+  border: 0px;
+}
+#run-btn:hover{
+    color: gray;
+}
+button{
+    background: black;
+    border: solid 1px gray;
+    color: white;
+    font-size: 14px;
+    padding: 10px;
+    margin-right: 5px;
+    margin-top: 5px;
+}
+button:hover{
+    color: gray;
+}
