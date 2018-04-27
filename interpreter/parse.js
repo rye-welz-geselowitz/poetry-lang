@@ -2,25 +2,14 @@ const utilities = require('./utilities');
 const AST = require('./ast');
 
 function parse(lines, rhyme, level=0){
-    if(detectInteger(lines, rhyme)){
-        return parseInteger(lines);
-    }
-    if(detectFunction(lines, rhyme)){
-        return parseFunction(lines, rhyme, level);
-    }
-    if(detectString(lines)){
-        return parseString(lines);
-    }
-    if(detectOperation(lines)){
-        return parseOperation(lines);
-    }
-    if(detectFunctionCall(lines, rhyme)){
-        return parseFunctionCall(lines);
-    }
-    if(detectIfElseBlock(lines, rhyme)){
-        return parseIfElseBlock(lines, rhyme, level);
-    }
-    const res = lines.reduce( (acc, lineData, idx) => {
+    const parsers = [parseInteger, parseIfElseBlock, parseFunction,
+        parseString, parseOperation, parseFunctionCall, parseCodeBlocks];
+    return parsers.reduce( (acc, f) => acc? acc : f(lines, rhyme, level), null)
+}
+
+//PARSERS
+function parseCodeBlocks(lines, rhyme, level){
+    const es = lines.reduce( (acc, lineData, idx) => {
         const line = lineData.text;
         if(idx===lines.length-1 && (!acc.openRhyme || !utilities.isRhyme(rhyme, acc.openRhyme, getLastWord(line)))){ //TODO: clean this line!!!
             const expression = parse(acc.currentGroup.concat(lineData), rhyme, level+1);
@@ -50,62 +39,122 @@ function parse(lines, rhyme, level=0){
             currentGroup: acc.currentGroup.concat(lineData),
             groups: acc.groups
         }
-    }, {openRhyme: null, currentGroup: [], groups: []});
+    }, {openRhyme: null, currentGroup: [], groups: []}).groups;
     if(level===0){
-        return new AST.Program(res.groups);
+        return new AST.Program(es);
     }
-    return res.groups.length===1? res.groups[0] : res.groups;
+    return es.length===1? es[0] : es;
+
 }
 
-function detectIfElseBlock(lineDataRaw, rhyme){
-    const lineData = lineDataRaw.map( (d) => Object.assign({}, d, {text: d.text.toLowerCase()})) //TODO: ew. clean this up.
-    const lines = lineData.map((l) => l.text)
-    const joined = lines.join('\s');
-    if(!ifElseRegex().test(joined)){
-        return false;
+function parseInteger(lineData, rhyme){
+    if(lineData.length===2 && hasWrappingRhyme(lineData, rhyme)){
+        const lines = lineData.map( (l) => l.text)
+        const words = lines[0].split(/\s+/).concat(lines[1].split(/\s+/));
+        const firstLetter = words[0][0].toLowerCase();
+        const n = words.reduce( (acc, val) => {
+            return val[0].toLowerCase() === firstLetter? (acc+1) : acc;
+        }, 0) - 1;
+        return new AST.Num(n);
     }
+    return null;
+}
+
+function parseIfElseBlock(lineData, rhyme, level){
+    const lines = lineData.map( (l) => l.text.toLowerCase());
     const endOfE1Idx =
-        lineData.findIndex( (l) => /.*\?/.test(l.text));
-    if(endOfE1Idx > 0 && (!isLinesRhyming(rhyme, lines[0], lines[endOfE1Idx]))){
-        return false;
-    }
+        lines.findIndex( (l) => /.*\?/.test(l));
     const beginningOfE3Idx =
-        lineData.findIndex( (l) => /(otherwise|else).*/.test(l.text))
-    if(beginningOfE3Idx < lines.length-1 && !isLinesRhyming(rhyme, lines[beginningOfE3Idx], lines[lines.length-1])){
-        return false;
+        lines.findIndex( (l) => /(otherwise|else).*/.test(l));
+    if(checkIfElseExpressionBoundaries(rhyme, lines, endOfE1Idx, beginningOfE3Idx)){
+        const e1Lines = lineData.slice(0, endOfE1Idx+1);
+        const e2Lines = lineData.slice(endOfE1Idx+1, beginningOfE3Idx );
+        const e3Lines = lineData.slice(beginningOfE3Idx);
+        const e1 = e1Lines.length===1?
+            new AST.Ref(getNthWord(e1Lines[0].text, 0))
+            : parse(cutFirstAndLastLines(e1Lines), rhyme, level+1);
+        const e2 = e2Lines.length===1?
+            new AST.Ref(getNthWord(e2Lines[0].text, 0))
+            : parse(cutFirstAndLastLines(e2Lines), rhyme, level+1);
+        const e3 = e3Lines.length===1?
+            new AST.Ref(getNthWord(e3Lines[0].text, 1))
+            : parse(cutFirstAndLastLines(e3Lines), rhyme, level+1);
+        return new AST.If(e1, e2, e3);
     }
-    return true;
+    return null;
+}
+
+function parseFunction(lineData, rhyme, level){
+    if(detectFunction(lineData, rhyme)){
+        const lines = lineData.map( (l) => l.text);
+        const rhymeToEndBody = getLastWord(lines[lines.length-2]);
+        const openingBodyIdx =
+            lines.findIndex( (l) => utilities.isRhyme(rhyme, getLastWord(l), rhymeToEndBody));
+        const parameters =
+            lines.slice(1, openingBodyIdx).map( (l) => getLastWord(l))
+        const body = lineData.slice(openingBodyIdx+1, lines.length-2)
+        const expressions = parse(body, rhyme, level+1);
+        return new AST.Func(parameters, expressions)
+    }
+    return null;
+
+}
+
+function parseString(lineData){
+    const matches = lineData.length && matchString(lineData[0].text);
+    return matches? new AST.Str(matches[1]) : null;
 }
 
 
-function detectOperation(lines){
-    return lines.length===1 &&
-        !/\".*\"/.test(lines[0].text)
-        && operationalWordsRegex().test(lines[0].text.toLowerCase())
+function parseFunctionCall(lineData, rhyme){
+    if(lineData.length===1 && hasInternalWrappingAlliteration(lineData[0].text)){
+        const words = lineData[0].text.split(/\s+/);
+        return new AST.Call(words[0], words.slice(1));
+    }
+    return null;
+
 }
 
-function detectString(lines){
-    return lines.length===1 &&
-        /\".*\"/.test(lines[0].text);
+
+function parseOperation(lineData){
+    const line = lineData[0].text;
+    const matches = line && line.match(operationalWordsRegex())
+    if(line && lineData.length===1 && matchString(line) === null && matches){
+        const words = line.split(/\s+/);
+        const e1 = new AST.Ref(words[0]);
+        const e2 = new AST.Ref(words[1]);
+        const operativeWord = matches[1];
+        const op = mapOperativeWordToOperation(operativeWord);
+        return new AST.Operation(e1, e2, op);
+    }
+    return null;
 }
 
-function detectInteger(lines, rhyme){
-    return lines.length===2 &&
-        hasWrappingRhyme(lines, rhyme)
-}
 
+//HELPERS
 function detectFunction(lines, rhyme){
     return lines.length > 5 &&
         hasWrappingInternalRhyme(lines[0].text, rhyme)
         && hasWrappingRhyme(lines, rhyme);
 }
 
-function detectFunctionCall(lines, rhyme){
-    return lines.length===1 && hasInternalWrappingAlliteration(lines[0].text);
+function matchString(text){
+    return text.match(/\"(.*)\"/);
 }
 
+//TODO: extract / clarify
+function checkIfElseExpressionBoundaries(rhyme, lines, endOfE1Idx, beginningOfE3Idx){
+    return endOfE1Idx > -1 && beginningOfE3Idx > -1
+        && !(endOfE1Idx > 0
+                && (!isLinesRhyming(rhyme, lines[0], lines[endOfE1Idx])))
+        && !((beginningOfE3Idx < lines.length-1 &&
+            !isLinesRhyming(rhyme, lines[beginningOfE3Idx], lines[lines.length-1])))
+}
+
+
 function hasWrappingRhyme(lines, rhyme){
-    return utilities.isRhyme(rhyme, getLastWord(lines[0].text), getLastWord(lines[lines.length-1].text));
+    return utilities.isRhyme(rhyme, getLastWord(lines[0].text),
+        getLastWord(lines[lines.length-1].text));
 }
 
 function hasWrappingInternalRhyme(line, rhyme){
@@ -126,79 +175,10 @@ function hasInternalWrappingAlliteration(line){
     return words[0][0].toLowerCase()===words[words.length-1][0].toLowerCase();
 }
 
-function parseString(lineData){
-    if(lineData.length!==1){
-        throw("Must call parseString on a single line")
-    }
-    return new AST.Str((lineData[0].text).match(/\"(.*)\"/)[1]);
-}
 
-function parseIfElseBlock(lineDataRaw, rhyme, level){
-    const lineData = lineDataRaw.map( (d) => Object.assign({}, d, {text: d.text.toLowerCase()}))
-    const lines = lineData.map( (l) => l.text);
-    const endOfE1Idx =
-        lines.findIndex( (l) => /.*\?/.test(l));
-    const beginningOfE3Idx =
-        lines.findIndex( (l) => /(otherwise|else).*/.test(l));
-    const e1Lines = lineDataRaw.slice(0, endOfE1Idx+1);
-    const e2Lines = lineDataRaw.slice(endOfE1Idx+1, beginningOfE3Idx );
-    const e3Lines = lineDataRaw.slice(beginningOfE3Idx);
-    const e1 = e1Lines.length===1?
-        new AST.Ref(getNthWord(e1Lines[0].text, 0))
-        : parse(cutFirstAndLastLines(e1Lines), rhyme, level+1);
-    const e2 = e2Lines.length===1?
-        new AST.Ref(getNthWord(e2Lines[0].text, 0))
-        : parse(cutFirstAndLastLines(e2Lines), rhyme, level+1);
-    const e3 = e3Lines.length===1?
-        new AST.Ref(getNthWord(e3Lines[0].text, 1))
-        : parse(cutFirstAndLastLines(e3Lines), rhyme, level+1);
-    return new AST.If(e1, e2, e3);
-}
 
-function parseFunctionCall(lineData){
-    const words = lineData[0].text.split(/\s+/);
-    return new AST.Call(words[0], words.slice(1));
-}
 
-function parseFunction(lineData, rhyme, level){
-    const lines = lineData.map( (l) => l.text);
-    const rhymeToEndBody = getLastWord(lines[lines.length-2]);
-    const openingBodyIdx =
-        lines.findIndex( (l) => utilities.isRhyme(rhyme, getLastWord(l), rhymeToEndBody));
-    const parameters =
-        lines.slice(1, openingBodyIdx).map( (l) => getLastWord(l))
-    const body = lineData.slice(openingBodyIdx+1, lines.length-2)
-    const expressions = parse(body, rhyme, level+1);
-    return new AST.Func(parameters, expressions)
-}
 
-function parseInteger(lineData){
-    if(lineData.length!==2){
-        throw("Must call parseInteger on pair of lines")
-    }
-    const lines = lineData.map( (l) => l.text)
-    const words = lines[0].split(/\s+/).concat(lines[1].split(/\s+/));
-    const firstLetter = words[0][0].toLowerCase();
-    const n = words.reduce( (acc, val) => {
-        return val[0].toLowerCase() === firstLetter? (acc+1) : acc;
-    }, 0) - 1;
-    return new AST.Num(n);
-}
-
-function parseOperation(lineData){
-    //TODO: handle a line that is too short
-    if(lineData.length!==1){
-        throw("Must call parseOperation on a single line");
-    }
-    const line = lineData[0].text;
-    const words = line.split(/\s+/);
-    const e1 = new AST.Ref(words[0]);
-    const e2 = new AST.Ref(words[1]);
-    const operativeWord = line.match(operationalWordsRegex())[1];
-    const op = mapOperativeWordToOperation(operativeWord);
-    return new AST.Operation(e1, e2, op);
-
-}
 function mapOperativeWordToOperation(word){
     const lookup = {
         "by": "*",
@@ -237,11 +217,9 @@ function getNthWord(line, n){
 }
 
 
-
 function cutFirstAndLastLines(lines){
     return lines.slice(0, lines.length-1)
 }
-
 
 
 
