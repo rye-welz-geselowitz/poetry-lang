@@ -1,3 +1,5 @@
+NOTE: This README (and this interpreter) are WIPs!
+
 # Code Blocks
 A code block is the code contained between two lines whose final words rhyme.
 
